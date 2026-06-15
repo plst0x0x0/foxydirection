@@ -1,0 +1,61 @@
+name: Build and Sign Extension
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # allows manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install web-ext
+        run: npm install -g web-ext
+
+      # --- Firefox build & sign (unlisted) ---
+      - name: Prepare Firefox manifest
+        run: cp manifest.firefox.json manifest.json
+
+      - name: Build Firefox extension (unsigned ZIP)
+        run: web-ext build --artifacts-dir ./firefox-artifacts
+
+      - name: Sign Firefox extension (unlisted)
+        run: |
+          web-ext sign \
+            --api-key=${{ secrets.FIREFOX_API_KEY }} \
+            --api-secret=${{ secrets.FIREFOX_API_SECRET }} \
+            --channel=unlisted \
+            --artifacts-dir ./firefox-artifacts
+        env:
+          # web-ext reads these from environment automatically if set
+          WEB_EXT_API_KEY: ${{ secrets.FIREFOX_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.FIREFOX_API_SECRET }}
+
+      # --- Chrome build (just a ZIP) ---
+      - name: Prepare Chrome manifest
+        run: cp manifest.chrome.json manifest.json
+
+      - name: Package Chrome extension
+        run: |
+          zip -r chrome-extension.zip manifest.json background.js
+
+      # --- Upload artifacts ---
+      - name: Upload Firefox signed XPI
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-extension
+          path: firefox-artifacts/*.xpi
+
+      - name: Upload Chrome ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: chrome-extension.zip
