@@ -1,1 +1,13 @@
-
+{
+  "manifest_version": 3,
+  "name": "RTL / LTR Toggle",
+  "version": "1.0",
+  "description": "Click the icon to toggle page direction between RTL and LTR.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Toggle page direction (RTL/LTR)"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
